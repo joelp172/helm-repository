@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres-test.fullname" . }}-script
+  labels:
+    {{- include "postgres-test.labels" . | nindent 4 }}
+data:
+  test-script.py: |
+    #!/usr/bin/env python3
+    import os
+    import time
+    import psycopg2
+    import uuid
+    import logging
+
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger('postgres-test')
+
+    # Get database credentials from environment variables
+    DB_HOST = os.environ.get('DB_HOST')
+    DB_PORT = os.environ.get('DB_PORT')
+    DB_NAME = os.environ.get('DB_NAME')
+    DB_USER = os.environ.get('DB_USER')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    TEST_FREQUENCY = int(os.environ.get('TEST_FREQUENCY_SECONDS', '60'))
+
+    # Connection string
+    conn_string = f"host={DB_HOST} port={DB_PORT} dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD}"
+
+    def create_test_table():
+        """Create a test table if it doesn't exist"""
+        try:
+            conn = psycopg2.connect(conn_string)
+            cursor = conn.cursor()
+            
+            logger.info("Creating test table if it doesn't exist")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS connectivity_test (
+                    id SERIAL PRIMARY KEY,
+                    test_id TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            logger.info("Test table created or already exists")
+            return True
+        except Exception as e:
+            logger.error(f"Error creating test table: {e}")
+            return False
+
+    def write_to_db():
+        """Write a test record to the database"""
+        try:
+            conn = psycopg2.connect(conn_string)
+            cursor = conn.cursor()
+            
+            test_id = str(uuid.uuid4())
+            message = f"Connectivity test at {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            
+            logger.info(f"Writing test record with ID: {test_id}")
+            cursor.execute(
+                "INSERT INTO connectivity_test (test_id, message) VALUES (%s, %s)",
+                (test_id, message)
+            )
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            logger.info("Successfully wrote test record")
+            return test_id
+        except Exception as e:
+            logger.error(f"Error writing to database: {e}")
+            return None
+
+    def read_from_db(test_id):
+        """Read the test record from the database"""
+        try:
+            conn = psycopg2.connect(conn_string)
+            cursor = conn.cursor()
+            
+            logger.info(f"Reading test record with ID: {test_id}")
+            cursor.execute(
+                "SELECT * FROM connectivity_test WHERE test_id = %s",
+                (test_id,)
+            )
+            
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if result:
+                logger.info(f"Successfully read test record: {result}")
+                return result
+            else:
+                logger.warning("No record found with the given test_id")
+                return None
+        except Exception as e:
+            logger.error(f"Error reading from database: {e}")
+            return None
+
+    def run_test_cycle():
+        """Run a complete test cycle (create table, write, read)"""
+        logger.info("Starting PostgreSQL connectivity test")
+        
+        # Step 1: Create the test table if it doesn't exist
+        if not create_test_table():
+            logger.error("Failed to create test table, aborting test")
+            return False
+        
+        # Step 2: Write a test record
+        test_id = write_to_db()
+        if not test_id:
+            logger.error("Failed to write test record, aborting test")
+            return False
+        
+        # Step 3: Read the test record
+        result = read_from_db(test_id)
+        if not result:
+            logger.error("Failed to read test record, test failed")
+            return False
+        
+        logger.info("PostgreSQL connectivity test completed successfully!")
+        return True
+
+    if __name__ == "__main__":
+        # Run test based on configured frequency
+        while True:
+            success = run_test_cycle()
+            logger.info(f"Test cycle completed with status: {'SUCCESS' if success else 'FAILURE'}")
+            time.sleep(TEST_FREQUENCY)
