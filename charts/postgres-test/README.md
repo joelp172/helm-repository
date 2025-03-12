@@ -30,7 +30,7 @@ helm repo update
 helm install postgres-test joelp172/postgres-test
 
 # Install with custom PostgreSQL credentials
-helm install postgres-test ./postgres-test \
+helm install postgres-test joelp172/postgres-test \
   --set postgres.credentials.host=mydb.example.com \
   --set postgres.credentials.port=5432 \
   --set postgres.credentials.username=myuser \
@@ -56,14 +56,14 @@ kubectl create secret generic my-postgres-creds \
 2. Use this secret in your Helm installation:
 
 ```bash
-helm install postgres-test ./postgres-test \
+helm install postgres-test joelp172/postgres-test \
   --set postgres.existingSecret.name=my-postgres-creds
 ```
 
 If your secret uses different key names, you can specify those:
 
 ```bash
-helm install postgres-test ./postgres-test \
+helm install postgres-test joelp172/postgres-test \
   --set postgres.existingSecret.name=my-postgres-creds \
   --set postgres.existingSecret.keys.host=POSTGRES_HOST \
   --set postgres.existingSecret.keys.username=POSTGRES_USER
@@ -103,7 +103,7 @@ The following table lists the configurable parameters of the chart and their def
 Check the logs to see the connectivity test results:
 
 ```bash
-kubectl logs -f deployment/postgres-test-postgres-test
+kubectl logs -f deployment/postgres-test
 ```
 
 Successful logs will show:
