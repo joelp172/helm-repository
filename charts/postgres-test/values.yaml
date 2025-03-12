@@ -1,0 +1,60 @@
+# Default values for postgres-test.
+replicaCount: 1
+
+image:
+  repository: python
+  tag: 3.13.2-slim
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# PostgreSQL connection details
+postgres:
+  # Connection test frequency in seconds
+  testFrequencySeconds: 60
+  
+  # Option 1: Define credentials directly in values
+  # These will be used if existingSecret is not provided
+  credentials:
+    host: "your-postgres-host"
+    port: "5432"
+    database: "postgres"
+    username: "admin"
+    password: "your-password"
+  
+  # Option 2: Use existing secret
+  # If provided, credentials above will be ignored
+  existingSecret:
+    # Name of existing secret
+    name: ""
+    # Key mappings (if they differ from default keys)
+    keys:
+      host: "DB_HOST"
+      port: "DB_PORT"
+      database: "DB_NAME"
+      username: "DB_USER"
+      password: "DB_PASSWORD"
