@@ -20,9 +20,14 @@ A Helm chart for testing connectivity to an external PostgreSQL database. This c
 
 ### Using Helm
 
-```bash
 # Install the chart with release name "postgres-test"
-helm install postgres-test ./postgres-test
+```bash
+# Add the repository
+helm repo add joelp172 https://joelp172.github.io/helm-repository/
+helm repo update
+
+# Install the chart with release name "postgres-test"
+helm install postgres-test joelp172/postgres-test
 
 # Install with custom PostgreSQL credentials
 helm install postgres-test ./postgres-test \
