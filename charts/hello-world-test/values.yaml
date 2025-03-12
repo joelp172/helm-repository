@@ -1,0 +1,39 @@
+# Default values for hello-world chart
+
+replicaCount: 3
+
+image:
+  repository: scottsbaldwin/docker-hello-world
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8088
+  targetPort: 80
+
+ingress:
+  enabled: true
+  className: "nginx-internal"
+  host: "hello-world.internal"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  path: /
+  pathType: Prefix
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
